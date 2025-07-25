@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickCook - Smart Cooking Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: clamp(2rem, 5vw, 2.5rem);
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: clamp(1rem, 3vw, 1.1rem);
+            opacity: 0.9;
+        }
+
+        .recipes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .recipe-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            border: 2px solid transparent;
+        }
+
+        .recipe-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .recipe-card:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+        }
+
+        .recipe-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .recipe-image::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .recipe-card:hover .recipe-image::before {
+            opacity: 1;
+        }
+
+        .recipe-info {
+            padding: 24px;
+        }
+
+        .recipe-name {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #2d3748;
+            line-height: 1.3;
+        }
+
+        .recipe-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .recipe-time {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .recipe-time::before {
+            content: "⏱️";
+            font-size: 0.9rem;
+        }
+
+        .difficulty-badge {
+            padding: 6px 14px;
+            border-radius: 25px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 2px solid;
+        }
+
+        .difficulty-beginner {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            color: #155724;
+            border-color: #b8dacc;
+        }
+
+        .difficulty-intermediate {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            color: #856404;
+            border-color: #f4d03f;
+        }
+
+        .difficulty-advanced {
+            background: linear-gradient(135deg, #f8d7da, #f5b7b1);
+            color: #721c24;
+            border-color: #f1948a;
+        }
+
+        .favorite-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            cursor: pointer;
+            font-size: 1.3rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .favorite-btn:hover {
+            background: white;
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+
+        .favorite-btn.active {
+            color: #e74c3c;
+            background: #fff5f5;
+        }
+
+        /* Enhanced Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+            padding: 10px;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 700px;
+            max-height: calc(100vh - 20px);
+            overflow: hidden;
+            position: relative;
+            animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+        }
+
+        .modal-header {
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            position: relative;
+        }
+
+        .modal-title {
+            font-size: clamp(1.5rem, 4vw, 2rem);
+            margin-bottom: 12px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .modal-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            opacity: 0.95;
+            flex-wrap: wrap;
+        }
+
+        .modal-time {
+            font-size: clamp(1rem, 3vw, 1.1rem);
+            font-weight: 500;
+        }
+
+        .modal-difficulty {
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+            font-weight: 600;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border: none;
+            color: white;
+            font-size: 1.8rem;
+            cursor: pointer;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+
+        .modal-tabs {
+            display: flex;
+            background: #f8f9fa;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .modal-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 16px 12px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: clamp(0.85rem, 2.5vw, 1rem);
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+            min-width: 80px;
+            color: #6b7280;
+        }
+
+        .tab-btn.active {
+            background: white;
+            border-bottom-color: #667eea;
+            color: #667eea;
+        }
+
+        .tab-content {
+            padding: 24px;
+            max-height: calc(100vh - 300px);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e0 #f7fafc;
+        }
+
+        .tab-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .tab-content::-webkit-scrollbar-track {
+            background: #f7fafc;
+        }
+
+        .tab-content::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 3px;
+        }
+
+        .ingredients-list {
+            list-style: none;
+        }
+
+        .ingredients-list li {
+            padding: 14px 0;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+            line-height: 1.5;
+        }
+
+        .ingredients-list li:before {
+            content: "✓";
+            color: #10b981;
+            font-weight: bold;
+            margin-right: 12px;
+            font-size: 1.1rem;
+        }
+
+        .steps-list {
+            list-style: none;
+        }
+
+        .step-item {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa, #f1f3f4);
+            border-radius: 16px;
+            border-left: 5px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .step-instruction {
+            font-size: clamp(1rem, 3vw, 1.1rem);
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #2d3748;
+            line-height: 1.5;
+        }
+
+        .step-timer {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: clamp(0.85rem, 2.5vw, 0.9rem);
+            color: #6b7280;
+            flex-wrap: wrap;
+        }
+
+        .timer-display {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        /* Timer Controls - Enhanced Mobile */
+        .timer-controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 -8px 32px rgba(0,0,0,0.12);
+            display: none;
+            z-index: 1001;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .timer-controls.active {
+            display: block;
+        }
+
+        .timer-layout {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .current-step {
+            flex: 1;
+            margin-right: 20px;
+            min-width: 0;
+        }
+
+        .current-step-text {
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .current-step-name {
+            font-size: clamp(1rem, 2.5vw, 1.1rem);
+            font-weight: 600;
+            color: #2d3748;
+            line-height: 1.3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .timer-main {
+            text-align: center;
+            margin: 0 20px;
+        }
+
+        .timer-time {
+            font-family: 'Courier New', monospace;
+            font-size: clamp(2rem, 6vw, 2.5rem);
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 12px;
+        }
+
+        .timer-progress {
+            width: clamp(150px, 30vw, 200px);
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0 auto 16px;
+        }
+
+        .timer-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .timer-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .timer-btn {
+            padding: clamp(10px, 3vw, 12px) clamp(16px, 4vw, 20px);
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: clamp(0.85rem, 2.5vw, 1rem);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: clamp(70px, 15vw, 80px);
+        }
+
+        .timer-btn.primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .timer-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .timer-btn.secondary {
+            background: #f7fafc;
+            color: #4a5568;
+            border: 2px solid #e2e8f0;
+        }
+
+        .timer-btn.secondary:hover {
+            background: #edf2f7;
+            border-color: #cbd5e0;
+        }
+
+        .timer-btn.danger {
+            background: linear-gradient(135deg, #e53e3e, #c53030);
+            color: white;
+            box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+        }
+
+        .timer-btn.danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(229, 62, 62, 0.4);
+        }
+
+        /* Nutrition and Tips Styles - Enhanced */
+        .nutrition-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .nutrition-item {
+            background: linear-gradient(135deg, #f8f9fa, #f1f3f4);
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .nutrition-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .nutrition-value {
+            font-size: clamp(1.2rem, 4vw, 1.5rem);
+            font-weight: 700;
+            color: #667eea;
+            display: block;
+        }
+
+        .nutrition-label {
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+            color: #6b7280;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+
+        .tips-section {
+            margin-bottom: 24px;
+        }
+
+        .tips-section h3 {
+            margin-bottom: 20px;
+            color: #2d3748;
+            font-size: clamp(1.1rem, 3vw, 1.2rem);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+        }
+
+        .tip-item {
+            background: linear-gradient(135deg, #fffbeb, #fef3c7);
+            padding: 18px;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            border-left: 5px solid #f59e0b;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .tip-icon {
+            font-size: 1.3rem;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .tip-text {
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+            line-height: 1.6;
+            color: #92400e;
+            font-weight: 500;
+        }
+
+        .notes-section h3 {
+            margin-bottom: 16px;
+            color: #2d3748;
+            font-size: clamp(1.1rem, 3vw, 1.2rem);
+            font-weight: 700;
+        }
+
+        .notes-section textarea {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+            resize: vertical;
+            min-height: 120px;
+            margin-bottom: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .notes-section textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* Mobile Responsive Enhancements */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .recipes-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .modal {
+                padding: 5px;
+            }
+
+            .modal-content {
+                border-radius: 20px;
+                max-height: calc(100vh - 10px);
+            }
+
+            .modal-header {
+                padding: 24px 20px;
+            }
+
+            .modal-tabs {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0;
+            }
+
+            .tab-btn {
+                padding: 14px 8px;
+                font-size: 0.85rem;
+            }
+
+            .tab-content {
+                padding: 20px;
+                max-height: calc(100vh - 250px);
+            }
+
+            .timer-controls {
+                padding: 16px;
+            }
+
+            .timer-layout {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+
+            .current-step {
+                margin-right: 0;
+            }
+
+            .current-step-name {
+                white-space: normal;
+            }
+
+            .timer-main {
+                margin: 0;
+            }
+
+            .nutrition-info {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .nutrition-item {
+                padding: 16px;
+            }
+
+            .recipe-meta {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .modal-tabs {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .tab-btn {
+                font-size: 0.8rem;
+                padding: 12px 6px;
+            }
+
+            .timer-buttons {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .timer-btn {
+                flex: 1;
+                min-width: 60px;
+            }
+
+            .nutrition-info {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .modal {
+                padding: 2px;
+            }
+
+            .tab-content {
+                padding: 16px;
+            }
+
+            .step-item {
+                padding: 16px;
+            }
+
+            .modal-tabs {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                transform: translateY(50px) scale(0.95); 
+                opacity: 0; 
+            }
+            to { 
+                transform: translateY(0) scale(1); 
+                opacity: 1; 
+            }
+        }
+
+        .pulse {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Loading states */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        /* Focus improvements */
+        .timer-btn:focus,
+        .tab-btn:focus,
+        .favorite-btn:focus {
+            outline: 2px solid #667eea;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🍳 QuickCook</h1>
+            <p>Smart cooking timers for perfect meals every time</p>
+        </header>
+
+        <main class="recipes-grid" id="recipesGrid" role="main">
+            <!-- Recipe cards will be generated here -->
+        </main>
+    </div>
+
+    <!-- Recipe Modal -->
+    <div class="modal" id="recipeModal" role="dialog" aria-labelledby="modalTitle" aria-hidden="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle"></h2>
+                <div class="modal-meta">
+                    <span class="modal-time" id="modalTime"></span>
+                    <span class="modal-difficulty" id="modalDifficulty"></span>
+                </div>
+                <button class="close-btn" id="closeModal" aria-label="Close recipe">&times;</button>
+            </div>
+
+            <div class="modal-tabs">
+                <button class="tab-btn active" data-tab="ingredients" role="tab" aria-selected="true">Ingredients</button>
+                <button class="tab-btn" data-tab="steps" role="tab" aria-selected="false">Steps</button>
+                <button class="tab-btn" data-tab="nutrition" role="tab" aria-selected="false">Nutrition</button>
+                <button class="tab-btn" data-tab="tips" role="tab" aria-selected="false">Tips</button>
+                <button class="tab-btn" data-tab="notes" role="tab" aria-selected="false">Notes</button>
+            </div>
+
+            <div class="tab-content">
+                <div id="ingredientsTab" class="tab-panel" role="tabpanel">
+                    <ul class="ingredients-list" id="ingredientsList"></ul>
+                </div>
+                <div id="stepsTab" class="tab-panel" role="tabpanel" style="display: none;">
+                    <ol class="steps-list" id="stepsList"></ol>
+                </div>
+                <div id="nutritionTab" class="tab-panel" role="tabpanel" style="display: none;">
+                    <div class="nutrition-info" id="nutritionInfo"></div>
+                </div>
+                <div id="tipsTab" class="tab-panel" role="tabpanel" style="display: none;">
+                    <div class="tips-section">
+                        <h3>💡 Cooking Tips</h3>
+                        <div id="tipsList"></div>
+                    </div>
+                </div>
+                <div id="notesTab" class="tab-panel" role="tabpanel" style="display: none;">
+                    <div class="notes-section">
+                        <h3>📝 Personal Notes</h3>
+                        <textarea id="notesTextarea" placeholder="Add your cooking notes, modifications, or tips here..." rows="8"></textarea>
+                        <button id="saveNotesBtn" class="timer-btn primary">Save Notes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timer Controls -->
+    <div class="timer-controls" id="timerControls">
+        <div class="timer-layout">
+            <div class="current-step">
+                <div class="current-step-text">Current Step:</div>
+                <div class="current-step-name" id="currentStepName"></div>
+            </div>
+            <div class="timer-main">
+                <div class="timer-time" id="timerTime">00:00</div>
+                <div class="timer-progress">
+                    <div class="timer-progress-bar" id="timerProgressBar"></div>
+                </div>
+                <div class="timer-buttons">
+                    <button class="timer-btn primary" id="playPauseBtn">Start</button>
+                    <button class="timer-btn secondary" id="skipBtn">Skip</button>
+                    <button class="timer-btn danger" id="stopBtn">Stop</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced Recipe Data with more Filipino recipes
+        const recipes = [
+            {
+                id: 1,
+                name: "Scrambled Eggs",
+                emoji: "🍳",
+                totalTime: "6 mins",
+                difficulty: "beginner",
+                nutrition: { calories: 185, protein: "12g", carbs: "2g", fat: "14g", fiber: "0g" },
+                ingredients: ["2 large eggs", "1 tbsp butter", "2 tbsp milk", "Salt to taste", "Black pepper"],
+                steps: [
+                    { instruction: "Melt butter in pan over medium-low heat", timer: 60 },
+                    { instruction: "Whisk eggs with milk, salt and pepper in bowl", timer: 45 },
+                    { instruction: "Pour eggs into pan and let sit for 20 seconds", timer: 20 },
+                    { instruction: "Gently stir and push eggs around pan", timer: 120 },
+                    { instruction: "Continue stirring until just set and creamy", timer: 90 },
+                    { instruction: "Remove from heat and serve immediately", timer: 0 }
+                ],
+                tips: [
+                    "Use low heat for creamier eggs - high heat makes them rubbery",
+                    "Add milk or cream for extra fluffiness",
+                    "Remove from heat while slightly underdone - they'll finish cooking",
+                    "Fresh herbs like chives or parsley add great flavor"
+                ]
+            },
+            {
+                id: 2,
+                name: "Perfect Pasta",
+                emoji: "🍝",
+                totalTime: "15 mins",
+                difficulty: "beginner",
+                nutrition: { calories: 220, protein: "8g", carbs: "44g", fat: "1g", fiber: "2g" },
+                ingredients: ["100g pasta", "1L water", "1 tsp salt", "1 tbsp olive oil"],
+                steps: [
+                    { instruction: "Fill large pot with water and add salt", timer: 0 },
+                    { instruction: "Bring salted water to rolling boil", timer: 480 },
+                    { instruction: "Add pasta and stir to prevent sticking", timer: 30 },
+                    { instruction: "Cook pasta according to package directions (usually 8-12 mins)", timer: 600 },
+                    { instruction: "Test pasta for doneness (al dente)", timer: 0 },
+                    { instruction: "Drain pasta and toss with olive oil", timer: 45 }
+                ],
+                tips: [
+                    "Use 1 liter of water per 100g of pasta for best results",
+                    "Salt the water generously - it should taste like seawater",
+                    "Never rinse pasta unless making a cold salad",
+                    "Save some pasta water to thin sauces if needed"
+                ]
+            },
+            {
+                id: 3,
+                name: "Fluffy Rice",
+                emoji: "🍚",
+                totalTime: "25 mins",
+                difficulty: "intermediate",
+                nutrition: { calories: 205, protein: "4g", carbs: "45g", fat: "0g", fiber: "1g" },
+                ingredients: ["1 cup jasmine rice", "1.5 cups water", "1/2 tsp salt", "1 tbsp butter"],
+                steps: [
+                    { instruction: "Rinse rice in cold water until water runs clear", timer: 120 },
+                    { instruction: "Combine rice, water, and salt in saucepan", timer: 0 },
+                    { instruction: "Bring to boil over high heat", timer: 300 },
+                    { instruction: "Reduce heat to lowest setting, cover tightly", timer: 0 },
+                    { instruction: "Simmer covered for 18 minutes (don't lift lid)", timer: 1080 },
+                    { instruction: "Remove from heat, let stand 5 minutes", timer: 300 },
+                    { instruction: "Fluff with fork and add butter", timer: 30 }
+                ],
+                tips: [
+                    "Rinsing removes excess starch for fluffier rice",
+                    "Use a 1:1.5 ratio of rice to water for most varieties",
+                    "Never lift the lid during cooking - it releases steam",
+                    "Let rice rest after cooking for even texture"
+                ]
+            },
+            {
+                id: 4,
+                name: "Chicken Adobo",
+                emoji: "🍗",
+                totalTime: "70 mins",
+                difficulty: "intermediate",
+                nutrition: { calories: 290, protein: "28g", carbs: "8g", fat: "18g", fiber: "1g" },
+                ingredients: ["1 kg chicken thighs", "1/2 cup soy sauce", "1/2 cup vinegar", "6 garlic cloves (crushed)", "1 tsp peppercorns", "3 bay leaves", "1 cup water"],
+                steps: [
+                    { instruction: "Marinate chicken in soy sauce, vinegar, garlic, peppercorns, and bay leaves", timer: 1800 },
+                    { instruction: "Heat pan over medium heat, sear marinated chicken pieces", timer: 300 },
+                    { instruction: "Add marinade and water, bring to boil then reduce to low heat", timer: 180 },
+                    { instruction: "Simmer covered on low heat (don't stir for first 10 minutes)", timer: 1500 },
+                    { instruction: "Remove cover and reduce sauce until thick", timer: 600 },
+                    { instruction: "Adjust seasoning and serve with rice", timer: 0 }
+                ],
+                tips: [
+                    "Don't stir during the first 10 minutes of simmering - this prevents chicken from breaking apart",
+                    "Adobo tastes even better the next day as flavors develop overnight",
+                    "Use a mix of soy sauce and vinegar for the perfect balance of salty and tangy",
+                    "Chicken thighs work better than breast meat as they stay tender during long cooking"
+                ]
+            },
+            {
+                id: 5,
+                name: "Fluffy Pancakes",
+                emoji: "🥞",
+                totalTime: "20 mins",
+                difficulty: "intermediate",
+                nutrition: { calories: 320, protein: "8g", carbs: "45g", fat: "12g", fiber: "2g" },
+                ingredients: ["1 cup all-purpose flour", "2 tbsp sugar", "2 tsp baking powder", "1/2 tsp salt", "1 cup milk", "1 large egg", "3 tbsp melted butter"],
+                steps: [
+                    { instruction: "Mix flour, sugar, baking powder, and salt in large bowl", timer: 60 },
+                    { instruction: "Whisk milk, egg, and melted butter in separate bowl", timer: 45 },
+                    { instruction: "Pour wet ingredients into dry, mix until just combined", timer: 30 },
+                    { instruction: "Let batter rest while heating pan", timer: 300 },
+                    { instruction: "Heat pan over medium heat, lightly grease", timer: 120 },
+                    { instruction: "Pour 1/4 cup batter per pancake", timer: 30 },
+                    { instruction: "Cook until bubbles form and edges set (2-3 mins)", timer: 150 },
+                    { instruction: "Flip and cook until golden brown (1-2 mins)", timer: 90 }
+                ],
+                tips: [
+                    "Don't overmix batter - lumps are okay for fluffy pancakes",
+                    "Let batter rest for better texture",
+                    "Test pan temperature with a drop of water - it should sizzle",
+                    "Keep cooked pancakes warm in 200°F oven"
+                ]
+            },
+            {
+                id: 6,
+                name: "Tinola (Ginger Chicken Soup)",
+                emoji: "🍲",
+                totalTime: "37 mins",
+                difficulty: "intermediate",
+                nutrition: { calories: 210, protein: "25g", carbs: "12g", fat: "8g", fiber: "3g" },
+                ingredients: ["1 whole chicken (cut up)", "2 chayote (sliced)", "1 cup moringa leaves", "3 thumbs ginger (sliced)", "6 cups water", "Fish sauce to taste"],
+                steps: [
+                    { instruction: "Sauté sliced ginger in oil over low heat until fragrant", timer: 180 },
+                    { instruction: "Add chicken pieces and brown on medium heat", timer: 420 },
+                    { instruction: "Pour water, bring to boil then simmer covered", timer: 1200 },
+                    { instruction: "Add sliced chayote and continue simmering", timer: 300 },
+                    { instruction: "Add moringa leaves and fish sauce, simmer briefly", timer: 120 },
+                    { instruction: "Taste and adjust seasoning, serve hot with rice", timer: 0 }
+                ],
+                tips: [
+                    "Use young papaya if chayote is unavailable - it adds similar texture and mild flavor",
+                    "Serve with patis (fish sauce) mixed with calamansi juice as a dipping sauce",
+                    "Don't overcook the moringa leaves - add them last to preserve nutrients and color",
+                    "Ginger should be aromatic but not browned when sautéing for best flavor"
+                ]
+            },
+            {
+                id: 7,
+                name: "Pancit Canton",
+                emoji: "🍜",
+                totalTime: "25 mins",
+                difficulty: "intermediate",
+                nutrition: { calories: 320, protein: "15g", carbs: "45g", fat: "10g", fiber: "4g" },
+                ingredients: ["500g canton noodles", "200g pork (sliced)", "200g shrimp", "2 cups cabbage (chopped)", "1 carrot (julienned)", "4 cloves garlic", "1 onion", "3 tbsp soy sauce", "2 tbsp oyster sauce"],
+                steps: [
+                    { instruction: "Soak canton noodles in warm water until soft", timer: 600 },
+                    { instruction: "Sauté garlic and onion until fragrant", timer: 180 },
+                    { instruction: "Add pork and cook until browned", timer: 300 },
+                    { instruction: "Add shrimp and cook until pink", timer: 120 },
+                    { instruction: "Add vegetables and stir-fry for 3 minutes", timer: 180 },
+                    { instruction: "Add drained noodles, soy sauce, and oyster sauce", timer: 240 },
+                    { instruction: "Toss everything together and cook for 2 more minutes", timer: 120 }
+                ],
+                tips: [
+                    "Don't oversoak the noodles - they should still have some bite",
+                    "Cook on high heat for authentic 'wok hei' (breath of the wok) flavor",
+                    "Add vegetables in order of cooking time - harder ones first",
+                    "Garnish with sliced green onions and serve with calamansi"
+                ]
+            },
+            {
+                id: 8,
+                name: "Sinigang na Baboy",
+                emoji: "🥣",
+                totalTime: "45 mins",
+                difficulty: "intermediate",
+                nutrition: { calories: 250, protein: "22g", carbs: "15g", fat: "12g", fiber: "5g" },
+                ingredients: ["500g pork ribs", "1 packet sinigang mix", "2 tomatoes (quartered)", "1 onion (quartered)", "2 cups kangkong", "2 pieces radish", "3 pieces okra", "2 pieces eggplant", "6 cups water"],
+                steps: [
+                    { instruction: "Boil pork ribs in water until tender", timer: 1800 },
+                    { instruction: "Add tomatoes and onions, simmer for 5 minutes", timer: 300 },
+                    { instruction: "Add sinigang mix and stir to dissolve", timer: 60 },
+                    { instruction: "Add radish and eggplant, cook for 5 minutes", timer: 300 },
+                    { instruction: "Add okra and cook for 3 minutes", timer: 180 },
+                    { instruction: "Add kangkong leaves last, simmer for 2 minutes", timer: 120 },
+                    { instruction: "Season with salt and serve hot", timer: 0 }
+                ],
+                tips: [
+                    "Use fresh tamarind instead of mix for more authentic sour flavor",
+                    "Don't overcook the vegetables - they should retain some crunch",
+                    "Add vegetables in order of cooking time to prevent overcooking",
+                    "Serve with steamed rice and fish sauce on the side"
+                ]
+            },
+            {
+                id: 9,
+                name: "Lumpia Shanghai",
+                emoji: "🥟",
+                totalTime: "40 mins",
+                difficulty: "advanced",
+                nutrition: { calories: 180, protein: "12g", carbs: "8g", fat: "12g", fiber: "1g" },
+                ingredients: ["500g ground pork", "1 pack lumpia wrapper", "1 carrot (minced)", "1 onion (minced)", "2 cloves garlic (minced)", "1 egg", "2 tbsp soy sauce", "Salt and pepper", "Oil for frying"],
+                steps: [
+                    { instruction: "Mix ground pork, vegetables, egg, and seasonings", timer: 300 },
+                    { instruction: "Place 1 tbsp filling on lumpia wrapper", timer: 0 },
+                    { instruction: "Roll tightly, sealing edges with water", timer: 1200 },
+                    { instruction: "Heat oil to 350°F in deep pan", timer: 300 },
+                    { instruction: "Fry lumpia in batches until golden brown", timer: 480 },
+                    { instruction: "Drain on paper towels and serve hot", timer: 120 }
+                ],
+                tips: [
+                    "Keep wrappers covered with damp cloth to prevent drying",
+                    "Roll tightly to prevent filling from leaking during frying",
+                    "Don't overfill - less is more for easier rolling",
+                    "Serve with sweet and sour sauce or banana ketchup"
+                ]
+            },
+            {
+                id: 10,
+                name: "French Toast",
+                emoji: "🍞",
+                totalTime: "12 mins",
+                difficulty: "intermediate",
+                nutrition: { calories: 290, protein: "12g", carbs: "35g", fat: "12g", fiber: "2g" },
+                ingredients: ["4 slices thick bread", "3 eggs", "1/3 cup milk", "1 tsp vanilla", "1/2 tsp cinnamon", "2 tbsp butter", "Pinch of salt"],
+                steps: [
+                    { instruction: "Whisk eggs, milk, vanilla, cinnamon, and salt in shallow dish", timer: 60 },
+                    { instruction: "Heat butter in large pan over medium heat", timer: 90 },
+                    { instruction: "Dip each bread slice in egg mixture, coating both sides", timer: 120 },
+                    { instruction: "Cook first batch until golden brown, 3-4 minutes", timer: 210 },
+                    { instruction: "Flip and cook other side until golden", timer: 180 },
+                    { instruction: "Repeat with remaining slices", timer: 240 },
+                    { instruction: "Serve immediately with syrup", timer: 0 }
+                ],
+                tips: [
+                    "Use thick, day-old bread for best absorption",
+                    "Don't soak bread too long - it will fall apart",
+                    "Medium heat prevents burning while cooking through",
+                    "Keep finished pieces warm in 200°F oven"
+                ]
+            },
+            {
+                id: 11,
+                name: "Berry Smoothie",
+                emoji: "🥤",
+                totalTime: "4 mins",
+                difficulty: "beginner",
+                nutrition: { calories: 180, protein: "8g", carbs: "35g", fat: "2g", fiber: "6g" },
+                ingredients: ["1 banana", "1/2 cup mixed berries", "1 cup milk", "1 tbsp honey", "1/2 cup ice cubes", "1 tbsp chia seeds (optional)"],
+                steps: [
+                    { instruction: "Add banana, berries, and honey to blender", timer: 30 },
+                    { instruction: "Pour in milk and add chia seeds if using", timer: 15 },
+                    { instruction: "Blend on high speed for 60 seconds", timer: 60 },
+                    { instruction: "Add ice cubes and blend until smooth", timer: 45 },
+                    { instruction: "Taste and adjust sweetness if needed", timer: 15 },
+                    { instruction: "Pour into glasses and serve immediately", timer: 30 }
+                ],
+                tips: [
+                    "Frozen fruit makes smoothies thicker and colder",
+                    "Add liquid gradually to control consistency",
+                    "Blend in stages for smoother texture",
+                    "Add protein powder for post-workout nutrition"
+                ]
+            },
+            {
+                id: 12,
+                name: "Leche Flan",
+                emoji: "🍮",
+                totalTime: "90 mins",
+                difficulty: "advanced",
+                nutrition: { calories: 280, protein: "6g", carbs: "45g", fat: "8g", fiber: "0g" },
+                ingredients: ["10 egg yolks", "1 can sweetened condensed milk", "1 cup granulated sugar", "1/4 cup water", "1 tsp vanilla extract"],
+                steps: [
+                    { instruction: "Make caramel: heat sugar and water until amber colored", timer: 600 },
+                    { instruction: "Pour caramel into llanera (flan mold), set aside", timer: 120 },
+                    { instruction: "Gently whisk egg yolks (avoid creating bubbles)", timer: 180 },
+                    { instruction: "Mix in condensed milk and vanilla extract", timer: 120 },
+                    { instruction: "Strain mixture to remove any lumps", timer: 180 },
+                    { instruction: "Pour mixture over caramel in mold", timer: 60 },
+                    { instruction: "Steam for 30-40 minutes until set", timer: 2100 },
+                    { instruction: "Cool completely before unmolding", timer: 1800 }
+                ],
+                tips: [
+                    "Don't create bubbles when mixing - this causes holes in the flan",
+                    "Strain the mixture for ultra-smooth texture",
+                    "Test doneness with toothpick - it should come out clean",
+                    "Cool completely before unmolding to prevent breaking"
+                ]
+            }
+        ];
+
+        // App State
+        let currentRecipe = null;
+        let currentStepIndex = 0;
+        let timerInterval = null;
+        let timeRemaining = 0;
+        let totalStepTime = 0;
+        let isTimerRunning = false;
+        let audioContext = null;
+        let favorites = JSON.parse(localStorage.getItem('quickcook-favorites') || '[]');
+        let recipeNotes = JSON.parse(localStorage.getItem('quickcook-notes') || '{}');
+
+        // DOM Elements
+        const recipesGrid = document.getElementById('recipesGrid');
+        const modal = document.getElementById('recipeModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalTime = document.getElementById('modalTime');
+        const modalDifficulty = document.getElementById('modalDifficulty');
+        const closeModal = document.getElementById('closeModal');
+        const ingredientsList = document.getElementById('ingredientsList');
+        const stepsList = document.getElementById('stepsList');
+        const timerControls = document.getElementById('timerControls');
+        const currentStepName = document.getElementById('currentStepName');
+        const timerTime = document.getElementById('timerTime');
+        const timerProgressBar = document.getElementById('timerProgressBar');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const skipBtn = document.getElementById('skipBtn');
+        const stopBtn = document.getElementById('stopBtn');
+
+        // Initialize Audio Context
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Play completion sound
+        function playCompletionSound() {
+            if (!audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+
+        // Format time display
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Get difficulty display text
+        function getDifficultyText(difficulty) {
+            const difficultyMap = {
+                'beginner': 'Beginner',
+                'intermediate': 'Intermediate',
+                'advanced': 'Advanced'
+            };
+            return difficultyMap[difficulty] || 'Beginner';
+        }
+
+        // Generate recipe cards
+        function generateRecipeCards() {
+            recipesGrid.innerHTML = recipes.map(recipe => `
+                <div class="recipe-card" data-recipe-id="${recipe.id}" tabindex="0" role="button" aria-label="Open ${recipe.name} recipe">
+                    <div style="position: relative;">
+                        <div class="recipe-image">${recipe.emoji}</div>
+                        <button class="favorite-btn ${favorites.includes(recipe.id) ? 'active' : ''}" 
+                                data-recipe-id="${recipe.id}" 
+                                aria-label="Toggle favorite for ${recipe.name}">
+                            ${favorites.includes(recipe.id) ? '❤️' : '🤍'}
+                        </button>
+                    </div>
+                    <div class="recipe-info">
+                        <h3 class="recipe-name">${recipe.name}</h3>
+                        <div class="recipe-meta">
+                            <p class="recipe-time">${recipe.totalTime}</p>
+                            <span class="difficulty-badge difficulty-${recipe.difficulty}">
+                                ${getDifficultyText(recipe.difficulty)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Toggle favorite
+        function toggleFavorite(recipeId) {
+            const index = favorites.indexOf(recipeId);
+            if (index > -1) {
+                favorites.splice(index, 1);
+            } else {
+                favorites.push(recipeId);
+            }
+            localStorage.setItem('quickcook-favorites', JSON.stringify(favorites));
+            generateRecipeCards();
+        }
+
+        // Open recipe modal
+        function openRecipe(recipeId) {
+            currentRecipe = recipes.find(r => r.id === recipeId);
+            if (!currentRecipe) return;
+
+            modalTitle.textContent = currentRecipe.name;
+            modalTime.textContent = currentRecipe.totalTime;
+            modalDifficulty.textContent = getDifficultyText(currentRecipe.difficulty);
+
+            // Populate ingredients
+            ingredientsList.innerHTML = currentRecipe.ingredients.map(ingredient => 
+                `<li>${ingredient}</li>`
+            ).join('');
+
+            // Populate steps
+            stepsList.innerHTML = currentRecipe.steps.map((step, index) => `
+                <li class="step-item">
+                    <div class="step-instruction">${step.instruction}</div>
+                    <div class="step-timer">
+                        ${step.timer > 0 ? `⏱️ ${formatTime(step.timer)}` : '📝 No timer needed'}
+                        ${step.timer > 0 ? `<button class="timer-btn primary" onclick="startStepTimer(${index})" style="margin-left: 10px; padding: 5px 10px; font-size: 0.8rem;">Start Timer</button>` : ''}
+                    </div>
+                </li>
+            `).join('');
+
+            // Populate nutrition info
+            const nutrition = currentRecipe.nutrition;
+            document.getElementById('nutritionInfo').innerHTML = `
+                <div class="nutrition-item">
+                    <span class="nutrition-value">${nutrition.calories}</span>
+                    <div class="nutrition-label">Calories</div>
+                </div>
+                <div class="nutrition-item">
+                    <span class="nutrition-value">${nutrition.protein}</span>
+                    <div class="nutrition-label">Protein</div>
+                </div>
+                <div class="nutrition-item">
+                    <span class="nutrition-value">${nutrition.carbs}</span>
+                    <div class="nutrition-label">Carbs</div>
+                </div>
+                <div class="nutrition-item">
+                    <span class="nutrition-value">${nutrition.fat}</span>
+                    <div class="nutrition-label">Fat</div>
+                </div>
+                <div class="nutrition-item">
+                    <span class="nutrition-value">${nutrition.fiber}</span>
+                    <div class="nutrition-label">Fiber</div>
+                </div>
+            `;
+
+            // Populate cooking tips
+            document.getElementById('tipsList').innerHTML = currentRecipe.tips.map(tip => `
+                <div class="tip-item">
+                    <div class="tip-icon">💡</div>
+                    <div class="tip-text">${tip}</div>
+                </div>
+            `).join('');
+
+            // Populate notes
+            document.getElementById('notesTextarea').value = getNote(recipeId);
+
+            modal.classList.add('active');
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Close modal
+        function closeRecipeModal() {
+            modal.classList.remove('active');
+            modal.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = 'auto';
+            stopTimer();
+        }
+
+        // Switch tabs
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.setAttribute('aria-selected', 'false');
+            });
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.style.display = 'none';
+            });
+
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.querySelector(`[data-tab="${tabName}"]`).setAttribute('aria-selected', 'true');
+            document.getElementById(`${tabName}Tab`).style.display = 'block';
+        }
+
+        // Start step timer
+        function startStepTimer(stepIndex) {
+            if (!currentRecipe) return;
+            
+            initAudio();
+            currentStepIndex = stepIndex;
+            const step = currentRecipe.steps[stepIndex];
+            
+            if (step.timer === 0) return;
+
+            timeRemaining = step.timer;
+            totalStepTime = step.timer;
+            currentStepName.textContent = step.instruction;
+            
+            timerControls.classList.add('active');
+            updateTimerDisplay();
+            
+            // Switch to steps tab
+            switchTab('steps');
+        }
+
+        // Update timer display
+        function updateTimerDisplay() {
+            timerTime.textContent = formatTime(timeRemaining);
+            const progress = totalStepTime > 0 ? ((totalStepTime - timeRemaining) / totalStepTime) * 100 : 0;
+            timerProgressBar.style.width = `${progress}%`;
+            
+            if (timeRemaining <= 10 && timeRemaining > 0) {
+                timerTime.classList.add('pulse');
+            } else {
+                timerTime.classList.remove('pulse');
+            }
+        }
+
+        // Start/pause timer
+        function toggleTimer() {
+            if (isTimerRunning) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
+        }
+
+        // Start timer
+        function startTimer() {
+            if (timeRemaining <= 0) return;
+            
+            isTimerRunning = true;
+            playPauseBtn.textContent = 'Pause';
+            
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                updateTimerDisplay();
+                
+                if (timeRemaining <= 0) {
+                    completeStep();
+                }
+            }, 1000);
+        }
+
+        // Pause timer
+        function pauseTimer() {
+            isTimerRunning = false;
+            playPauseBtn.textContent = 'Resume';
+            clearInterval(timerInterval);
+        }
+
+        // Complete step
+        function completeStep() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            playPauseBtn.textContent = 'Start';
+            playCompletionSound();
+            
+            // Show completion message
+            alert(`Step completed: ${currentStepName.textContent}`);
+            
+            // Move to next step or finish
+            if (currentStepIndex < currentRecipe.steps.length - 1) {
+                const nextStepIndex = currentRecipe.steps.findIndex((step, index) => 
+                    index > currentStepIndex && step.timer > 0
+                );
+                
+                if (nextStepIndex !== -1) {
+                    setTimeout(() => {
+                        if (confirm('Start next timed step?')) {
+                            startStepTimer(nextStepIndex);
+                        } else {
+                            stopTimer();
+                        }
+                    }, 1000);
+                } else {
+                    setTimeout(() => {
+                        alert('All timed steps completed! 🎉');
+                        stopTimer();
+                    }, 1000);
+                }
+            } else {
+                setTimeout(() => {
+                    alert('Recipe completed! 🎉');
+                    stopTimer();
+                }, 1000);
+            }
+        }
+
+        // Skip step
+        function skipStep() {
+            if (confirm('Skip current step?')) {
+                completeStep();
+            }
+        }
+
+        // Stop timer
+        function stopTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timeRemaining = 0;
+            playPauseBtn.textContent = 'Start';
+            timerControls.classList.remove('active');
+            timerTime.classList.remove('pulse');
+        }
+
+        // Add functions for notes management
+        function saveNote(recipeId, note) {
+            recipeNotes[recipeId] = note;
+            localStorage.setItem('quickcook-notes', JSON.stringify(recipeNotes));
+        }
+
+        function getNote(recipeId) {
+            return recipeNotes[recipeId] || '';
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            generateRecipeCards();
+            
+            // Recipe card clicks
+            recipesGrid.addEventListener('click', (e) => {
+                const card = e.target.closest('.recipe-card');
+                const favoriteBtn = e.target.closest('.favorite-btn');
+                
+                if (favoriteBtn) {
+                    e.stopPropagation();
+                    toggleFavorite(parseInt(favoriteBtn.dataset.recipeId));
+                } else if (card) {
+                    openRecipe(parseInt(card.dataset.recipeId));
+                }
+            });
+
+            // Keyboard navigation for recipe cards
+            recipesGrid.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    const card = e.target.closest('.recipe-card');
+                    if (card) {
+                        e.preventDefault();
+                        openRecipe(parseInt(card.dataset.recipeId));
+                    }
+                }
+            });
+
+            // Modal close
+            closeModal.addEventListener('click', closeRecipeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeRecipeModal();
+            });
+
+            // Escape key to close modal
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.classList.contains('active')) {
+                    closeRecipeModal();
+                }
+            });
+
+            // Tab switching
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    switchTab(btn.dataset.tab);
+                });
+            });
+
+            // Timer controls
+            playPauseBtn.addEventListener('click', toggleTimer);
+            skipBtn.addEventListener('click', skipStep);
+            stopBtn.addEventListener('click', stopTimer);
+
+            // Notes saving
+            document.getElementById('saveNotesBtn').addEventListener('click', () => {
+                if (currentRecipe) {
+                    const note = document.getElementById('notesTextarea').value;
+                    saveNote(currentRecipe.id, note);
+                    
+                    // Show success feedback
+                    const btn = document.getElementById('saveNotesBtn');
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Saved!';
+                    btn.style.background = '#27ae60';
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.style.background = '';
+                    }, 2000);
+                }
+            });
+        });
+
+        // Make functions globally available for inline onclick handlers
+        window.startStepTimer = startStepTimer;
+    </script>
+</body>
+</html>
